@@ -1,0 +1,7 @@
+In the last article we have learnt about Node affinity. Taints and Toleration functions similarly but take an opposite approach.
+
+When we use Node affinity (a property of Pods) it attracts them to a set of nodes (either as a preference or a hard requirement). Taints behaves exactly opposite, they allow a node to repel a set of pods.
+
+In Kubernetes you can mark (taint) a node so that no pods can be scheduled on that node unless they have explicit tolerations applied. Tolerations are applied to pods, and allow (but do not require) the pods to schedule onto nodes with matching taints.
+
+Taints and tolerations working together ensures that pods are not scheduled onto inappropriate nodes.

@@ -1,0 +1,24 @@
+{
+  "name": "speak-polly-app",
+  "version": "1.0.0",
+  "description": "Serverless Event Driven Application to generate audio from text",
+  "main": "handler.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "aws",
+    "polly",
+    "nodejs",
+    "javascript",
+    "ai",
+    "ml",
+    "voice"
+  ],
+  "author": "Ashutosh Panda",
+  "license": "MIT",
+  "dependencies": {
+    "aws-sdk": "^2.1235.0",
+    "uuid": "^9.0.0"
+  }
+}
