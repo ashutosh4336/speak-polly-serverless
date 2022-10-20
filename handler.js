@@ -1,10 +1,12 @@
 // https://docs.aws.amazon.com/polly/latest/dg/API_SynthesizeSpeech.html
 
 'use strict';
+
 const AWS = require('aws-sdk');
 const { v4: uuidV4 } = require('uuid');
 const Polly = new AWS.Polly({ apiVersion: '2016-06-10' });
 const S3 = new AWS.S3({ apiVersion: 'latest' });
+const dynamodb = new AWS.DynamoDB({ apiVersion: '2012-08-10' });
 
 module.exports.speakPolly = async (event) => {
   try {
@@ -31,7 +33,8 @@ module.exports.speakPolly = async (event) => {
       const data = await Polly.synthesizeSpeech(params).promise();
 
       const destinationBucketName = process.env.AUDIO_BUCKET;
-      const destinationObjectKey = `${uuidV4()}.mp3`;
+      const mp3FileKey = uuidV4();
+      const destinationObjectKey = `${mp3FileKey}.mp3`;
 
       const s3Params = {
         Bucket: destinationBucketName,
@@ -40,7 +43,21 @@ module.exports.speakPolly = async (event) => {
         ContentType: 'audio/mpeg',
       };
 
-      await putObjectToS3(s3Params);
+      const dynamoTableName = process.env.DYNAMODB_TABLE;
+
+      const done = await Promise.all([
+        putObjectToS3(s3Params),
+        putItemToDynamoDB(dynamoTableName, {
+          id: { S: mp3FileKey },
+          text: { S: text },
+          voiceId: { S: voiceId },
+          bucket: { S: destinationBucketName },
+          createdAt: { S: new Date().toISOString() },
+          updatedAt: { S: new Date().toISOString() },
+        }),
+      ]);
+
+      console.log(60, '---->', done);
     }
 
     return {
@@ -52,6 +69,7 @@ module.exports.speakPolly = async (event) => {
       ),
     };
   } catch (err) {
+    console.error('/Error Happened in speakPolly: ', err);
     return {
       statusCode: 500,
       body: JSON.stringify({ message: 'Error', data: err }, null, 2),
@@ -77,6 +95,15 @@ async function putObjectToS3({ Bucket, Key, data, ContentType }) {
   };
 
   return await S3.putObject(params).promise();
+}
+
+async function putItemToDynamoDB(TableName, Item) {
+  const params = {
+    TableName: TableName,
+    Item: Item,
+  };
+
+  return await dynamodb.putItem(params).promise();
 }
 
 function unquotePlus(s) {

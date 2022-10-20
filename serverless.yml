@@ -4,6 +4,7 @@ frameworkVersion: '3'
 custom:
   text_bucket: text-${self:service}-${self:provider.stage}
   audio_bucket: audio-${self:service}-${self:provider.stage}
+  dynamodb_table: mp3-${self:service}-${self:provider.stage}
 
 provider:
   name: aws
@@ -16,6 +17,7 @@ provider:
   environment:
     TEXT_BUCKET: ${self:custom.text_bucket}
     AUDIO_BUCKET: ${self:custom.audio_bucket}
+    DYNAMODB_TABLE: ${self:custom.dynamodb_table}
 
   iam:
     role:
@@ -30,6 +32,14 @@ provider:
         - Effect: Allow
           Action: 'polly:*'
           Resource: '*'
+        - Effect: Allow
+          Action:
+            - 'dynamodb:PutItem'
+            - 'dynamodb:GetItem'
+            - 'dynamodb:DeleteItem'
+          Resource:
+            - 'arn:aws:dynamodb:${self:provider.region}:*:table/${self:custom.dynamodb_table}'
+            - 'arn:aws:dynamodb:${self:provider.region}:*:table/${self:custom.dynamodb_table}/*'
 
 functions:
   speakPolly:
@@ -63,3 +73,17 @@ resources:
         AccessControl: PublicRead
         VersioningConfiguration:
           Status: Suspended
+
+    DynamoDBTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:custom.dynamodb_table}
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
